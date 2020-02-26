@@ -26,7 +26,8 @@ def lambda_handler(event, context):
             file.write(content)
             file.close()
 
-    # read_file takes a file path and returns the string content of the file
+    # TODO: fix bug where read_file function successfully downloads
+    # password file from s3 but returns an empty string
     def read_file(path):
         temp_string = ""
         with open(path, 'r') as file:
@@ -72,7 +73,7 @@ def lambda_handler(event, context):
                 return 'stranger'
 
     # if no Digits and request from twilio via authorized number,
-    # this is a CREATE< READ< DELETE request. create a validator & parse data
+    # this is a CREATE/ READ/ DELETE request. create a validator & parse data
     elif u'twilioSignature' in event and u'Body' in event and event['From'] == os.environ['MY_NUMBER']:
 
         form_parameters = {
@@ -91,11 +92,10 @@ def lambda_handler(event, context):
 
         # if request valid, process text
         if request_valid:
-            rawmsg = form_parameters['Body']
-            msg = rawmsg.split(" ")
+            msg = form_parameters['Body'].split(" ")
 
-            if msg[0] == "CREATE":
-                # add code to file
+            def create():
+                # take the second value of msg and adds to pass keys
                 pass_string = msg[1] + " "
                 s3 = boto3.client('s3')
                 s3.download_file(bucket, s3_path, temp_filename)
@@ -108,8 +108,7 @@ def lambda_handler(event, context):
                 return '<?xml version=\"1.0\" encoding=\"UTF-8\"?>' \
                     '<Response><Message>Key created!</Message></Response>'
 
-            elif msg[0] == "READ":
-                print("we reading")
+            def read():
                 # download and return all active codes
                 pass_string = ""
                 s3 = boto3.client('s3')
@@ -122,9 +121,8 @@ def lambda_handler(event, context):
                 return '<?xml version=\"1.0\" encoding=\"UTF-8\"?>' \
                     f'<Response><Message>Active Keys: {pass_string}</Message></Response>'
 
-            elif msg[0] == "DELETE":
-                print("hmm interesting")
-                # delete provided code
+            def delete():
+                # deletes the second value of msg from existing pass keys
                 pass_string = ""
                 s3 = boto3.client('s3')
                 s3.download_file(bucket, s3_path, temp_filename)
@@ -146,7 +144,23 @@ def lambda_handler(event, context):
                     return '<?xml version=\"1.0\" encoding=\"UTF-8\"?>' \
                         f'<Response><Message>Key {msg[1]} Not Found!</Message></Response>'
 
-        # if request is not from twilio, give appropriate response
+            def command_not_found():
+                # lets user know an undefined command was passed
+                return '<?xml version=\"1.0\" encoding=\"UTF-8\"?>' \
+                    f'<Response><Message>{msg[0]} command was not found</Message></Response>'
+
+            def handle_request(input):
+                # switches between different outcomes for user's command
+                switcher = {
+                    "READ": read,
+                    "CREATE": create,
+                    "DELETE": delete
+                }
+                return switcher.get(input, command_not_found)
+
+            return handle_request(msg[0])()
+
+        # if request is not from twilio, give appropriate response :)
         else:
             return '<?xml version=\"1.0\" encoding=\"UTF-8\"?>' \
                    '<Response><Message>Nice Try...</Message></Response>'
