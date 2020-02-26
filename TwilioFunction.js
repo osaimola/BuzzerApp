@@ -24,33 +24,33 @@ exports.handler = function(context, event, callback) {
     ).then(response => {
       response.text().then(text => {
         // handle response content
-        if (text === "master") {
-          twiml.say("Welcome");
-          twiml.play({
-            digits: "9"
-          });
-          callback(null, twiml);
-        } else if (text === "friend") {
-          twiml.say("Door's open!");
-          twiml.play({
-            digits: "w9"
-          });
-          callback(null, twiml);
-        } else if (text === "guest") {
-          twiml.say("Please Hold");
-          twiml.dial("587-298-8048");
-          callback(null, twiml);
-        } else if (text === "stranger") {
-          twiml.say("Sorry, wrong code. Goodbye");
-          callback(null, twiml);
-        } else {
-          twiml.say("Something went wrong. Contact Osa.");
+        switch (text) {
+          case "master":
+            twiml.say("Welcome");
+            twiml.play({
+              digits: "9"
+            });
+            callback(null, twiml);
+            break;
+          case "friend":
+            twiml.say("Door's open!");
+            twiml.play({
+              digits: "w9"
+            });
+            callback(null, twiml);
+            break;
+          case "stranger":
+            twiml.say("Sorry, wrong code. Goodbye");
+            callback(null, twiml);
+            break;
+          default:
+            twiml.say("Something went wrong. Contact Osa.");
+            callback(null, twiml);
         }
       });
     });
   } else {
-
-  /* this will run when a call first comes in
+    /* this will run when a call first comes in
       play message to request DTMF tones and return codes to this function*/
     twiml
       .gather({ numDigits: 4 })
