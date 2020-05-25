@@ -26,7 +26,7 @@ exports.handler = function(context, event, callback) {
         // handle response content
         switch (text) {
           case "master":
-            twiml.say("Welcome");
+            twiml.say("Welcome back");
             twiml.play({
               digits: "9"
             });
